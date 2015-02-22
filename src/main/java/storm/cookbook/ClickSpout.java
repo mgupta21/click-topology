@@ -82,9 +82,3 @@ public class ClickSpout extends BaseRichSpout {
 
 }
 
-/*
- *  nextTuple(): This method is called by Storm to get the next tuple from the input source. Inside this method, you will have the logic of reading data from the external sources and emitting them to an instance of backtype.storm.spout.ISpoutOutputCollector. The schema for streams can be declared by using the declareStream method of backtype.storm.topology.OutputFieldsDeclarer.
- * If a spout wants to emit data to more than one stream, it can declare multiple streams using the declareStream method and specify a stream ID while emitting the tuple.
- * 
- *  */
-

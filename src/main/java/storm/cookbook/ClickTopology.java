@@ -10,11 +10,12 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.utils.Utils;
 
 /*
- * 
  * This class defines the topology and provides the mechanisms to
  *  launch the topology into a cluster or in a local mode
- * 
  */
+
+// Running topology in local 
+// mvn compile exec:java -Dexec.classpathScope=compile -Dexec.mainClass=storm.cookbook.ClickTopology 
 
 public class ClickTopology {
 
