@@ -44,8 +44,11 @@ public class GeographyBolt extends BaseRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
+		
+		// Add/enrich each outgoing tuple with fields country and city
 		outputFieldsDeclarer.declare(new Fields(storm.cookbook.Fields.COUNTRY,
 				storm.cookbook.Fields.CITY));
+		
 	}
 
 }

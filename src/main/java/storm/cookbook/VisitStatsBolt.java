@@ -8,6 +8,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+
 /*
  * VisitorStatsBolt method provides the final counting functionality for
  *  visitors and unique visits, based on the enriched stream
@@ -15,8 +16,7 @@ import backtype.storm.tuple.Values;
  * 
  * This bolt needs to receive all the count information in order to
  * maintain a single in-memory count,
- * which is reflected in the topology definition:
- * builder.setBolt("totalStats", new VisitStatsBolt(), 1).globalGrouping("repeatsBolt");
+ * which is reflected in the topology definition (one executor and globalGrouping):
  *
  */
 public class VisitStatsBolt extends BaseRichBolt {
@@ -42,9 +42,10 @@ public class VisitStatsBolt extends BaseRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
+
+		// emit stream "default" with each tuple having fields total and unique
 		outputFieldsDeclarer.declare(new backtype.storm.tuple.Fields(
 				Fields.TOTAL_COUNT, Fields.TOTAL_UNIQUE));
-
 	}
 
 }

@@ -30,12 +30,25 @@ public class ClickSpout extends BaseRichSpout {
 	private SpoutOutputCollector collector;
 
 	public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
+
+		// uses default streamId "default"
+		// Bolts can subscribe to multiple streams from spouts and bolts.
+		// emit tuple with fields IP, URL, Client_Key
 		outputFieldsDeclarer.declare(new Fields(storm.cookbook.Fields.IP,
 				storm.cookbook.Fields.URL, storm.cookbook.Fields.CLIENT_KEY));
+		
+		// declares schema for streams,
+		// spout can emit data to multiple streams using declareStream
+		// and by specifying streamID while emitting tuple
+		// outputFieldsDeclarer.declareStream(String streamId, Fields fields);
+
 	}
 
+	// called only once when spout is initialized
+	// defines logic to connect and fetch from external source
 	public void open(Map conf, TopologyContext topologyContext,
 			SpoutOutputCollector spoutOutputCollector) {
+		
 		host = conf.get(Conf.REDIS_HOST_KEY).toString();
 		port = Integer.valueOf(conf.get(Conf.REDIS_PORT_KEY).toString());
 		this.collector = spoutOutputCollector;
@@ -47,6 +60,8 @@ public class ClickSpout extends BaseRichSpout {
 	}
 
 	public void nextTuple() {
+		
+		// get data from external source
 		String content = jedis.rpop("count");
 		if (content == null || "nil".equals(content)) {
 			try {
@@ -59,8 +74,17 @@ public class ClickSpout extends BaseRichSpout {
 			String url = obj.get(storm.cookbook.Fields.URL).toString();
 			String clientKey = obj.get(storm.cookbook.Fields.CLIENT_KEY)
 					.toString();
+			
+			// emit data/streams to instance of SpoutOutputCollector
 			collector.emit(new Values(ip, url, clientKey));
 		}
 	}
 
 }
+
+/*
+ *  nextTuple(): This method is called by Storm to get the next tuple from the input source. Inside this method, you will have the logic of reading data from the external sources and emitting them to an instance of backtype.storm.spout.ISpoutOutputCollector. The schema for streams can be declared by using the declareStream method of backtype.storm.topology.OutputFieldsDeclarer.
+ * If a spout wants to emit data to more than one stream, it can declare multiple streams using the declareStream method and specify a stream ID while emitting the tuple.
+ * 
+ *  */
+
