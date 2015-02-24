@@ -8,7 +8,6 @@ import backtype.storm.tuple.Tuple;
 // simple abstraction of some of the initialization code
 public class StormTestCase {
 
-	
 	// usually mockeries are called as mockery, or context.
 	// Initialize JMock context and use it to mock any class
 	protected Mockery context = new Mockery() {

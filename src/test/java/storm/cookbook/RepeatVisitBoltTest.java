@@ -30,10 +30,11 @@ public class RepeatVisitBoltTest extends StormTestCase {
 
 	// data generator method must be annotated with @Parameters
 	// Each array element represents data to be used in each test execution
-	// Number of elements in each array must be same as number of parameters in constructor
+	// Number of elements in each array must be same as number of parameters in
+	// constructor
 	@Parameterized.Parameters
 	public static Collection<Object[]> data() {
-		
+
 		// 2-D array
 		Object[][] data = new Object[][] {
 				{ "192.168.33.100", "Client1", "myintranet.com", "false" },
@@ -61,14 +62,15 @@ public class RepeatVisitBoltTest extends StormTestCase {
 
 	@BeforeClass
 	public static void setupJedis() {
-		
+
 		Jedis jedis = new Jedis("localhost", 6379);
 		jedis.flushDB();
 		Iterator<Object[]> it = data().iterator();
-		// Before the tests execute, the static data is populated into the Redis DB
+		// Before the tests execute, the static data is populated into the Redis
+		// DB
 		while (it.hasNext()) {
 			Object[] values = it.next();
-			// In each object, check third element of array,  
+			// In each object, check third element of array,
 			if (values[3].equals("false")) {
 				String key = values[2] + ":" + values[1];
 				jedis.set(key, "visited");// unique, meaning it must exist
@@ -78,25 +80,25 @@ public class RepeatVisitBoltTest extends StormTestCase {
 
 	@Test
 	public void testExecute() {
-		
+
 		jedis = new Jedis("localhost", 6379);
-		
+
 		// test class
 		RepeatVisitBolt bolt = new RepeatVisitBolt();
 		Map<String, String> config = new HashMap<String, String>();
 		config.put("redisHost", "localhost");
 		config.put("redisPort", "6379");
-		
+
 		// mocked OutputCollector
 		final OutputCollector collector = context.mock(OutputCollector.class);
-		
+
 		// Initialize bolt, set redis DB
 		bolt.prepare(config, null, collector);
 
 		assertEquals(true, bolt.isConnected());
 
 		final Tuple tuple = getTuple();
-		
+
 		// define behavior to mock
 		context.checking(new Expectations() {
 			{
@@ -110,7 +112,7 @@ public class RepeatVisitBoltTest extends StormTestCase {
 			}
 		});
 
-		// test the bolt 
+		// test the bolt
 		bolt.execute(tuple);
 		context.assertIsSatisfied();
 
