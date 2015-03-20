@@ -17,6 +17,9 @@ import org.junit.runners.Parameterized;
 import redis.clients.jedis.Jedis;
 import backtype.storm.utils.Utils;
 
+//Start Redis server before executing Test
+///usr/local/bin/redis-server
+
 /**
  * The integration test basically injects on the input queue,
  * and then introduces a test bolt which simply persists the 

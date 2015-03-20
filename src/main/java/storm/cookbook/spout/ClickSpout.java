@@ -1,4 +1,4 @@
-package storm.cookbook;
+package storm.cookbook.spout;
 
 import java.util.Map;
 
@@ -7,6 +7,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
 import redis.clients.jedis.Jedis;
+import storm.cookbook.Conf;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;

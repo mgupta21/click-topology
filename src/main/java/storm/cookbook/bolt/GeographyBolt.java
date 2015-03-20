@@ -1,9 +1,10 @@
-package storm.cookbook;
+package storm.cookbook.bolt;
 
 import java.util.Map;
 
 import org.json.simple.JSONObject;
 
+import storm.cookbook.IPResolver;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;

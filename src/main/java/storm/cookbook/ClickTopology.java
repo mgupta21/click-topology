@@ -1,5 +1,10 @@
 package storm.cookbook;
 
+import storm.cookbook.bolt.GeoStatsBolt;
+import storm.cookbook.bolt.GeographyBolt;
+import storm.cookbook.bolt.RepeatVisitBolt;
+import storm.cookbook.bolt.VisitStatsBolt;
+import storm.cookbook.spout.ClickSpout;
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;

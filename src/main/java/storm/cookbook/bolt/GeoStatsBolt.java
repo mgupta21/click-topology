@@ -1,8 +1,10 @@
-package storm.cookbook;
+package storm.cookbook.bolt;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import storm.cookbook.CountryStats;
+import storm.cookbook.Fields;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
