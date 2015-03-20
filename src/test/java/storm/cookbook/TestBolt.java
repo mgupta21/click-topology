@@ -29,6 +29,7 @@ public final class TestBolt extends BaseRichBolt {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {}
 
 	public void execute(Tuple input) {
+		
 		List objects = input.getValues();
 		objects.add(0, input.getSourceComponent());
 		jedis.rpush("TestTuple", JSONArray.toJSONString(objects));

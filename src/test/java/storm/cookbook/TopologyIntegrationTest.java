@@ -21,12 +21,13 @@ import backtype.storm.utils.Utils;
 ///usr/local/bin/redis-server
 
 /**
- * The integration test basically injects on the input queue,
- * and then introduces a test bolt which simply persists the 
- * tuple into a JSON object onto an output queue. 
- * Note that test is parameter driven, but the cluster is only
- * shutdown once all tests have run
+ * Test the topology from end-to-end, with defined input and output points
+ * within a local cluster. The integration test basically injects on the input
+ * queue, and then introduces a test bolt which simply persists the tuple into a
+ * JSON object onto an output queue. Note that test is parameter driven, but the
+ * cluster is only shutdown once all tests have run
  * */
+
 @RunWith(value = Parameterized.class)
 public class TopologyIntegrationTest {
     //input: ip, url, clientID
@@ -42,22 +43,35 @@ public class TopologyIntegrationTest {
                 {new Object[]{ "4.17.136.0", "internal.com",  "Client2"}, //input, same client, different location
                         new Object[]{ "UNITED STATES", new Long(2), "DERRY, NH", new Long(2), new Long(4), new Long(2) } }};//expectations
         return Arrays.asList(data);
-    }
+    } // static method to generate test data (Parameterized framework)
 
     private static Jedis jedis;
     private static ClickTopology topology = new ClickTopology();
     private static TestBolt testBolt = new TestBolt();
 
+    Object[] input;
+    Object[] expected;
+    
+    // constructor to store test data (Parameterized framework)
+    public TopologyIntegrationTest(Object[] input,Object[] expected){
+    	this.input = input;
+    	this.expected = expected;
+    }
+    
     @BeforeClass
     public static void setup(){
-        //We want all output tuples coming to the mock for testing purposes
+        
+    	//We want all output tuples coming to the mock (bolt) for testing purposes
         topology.getBuilder().setBolt("testBolt",testBolt, 1).globalGrouping("geoStats").globalGrouping("totalStats");
+        
         //run in local mode, but we will shut the cluster down when we are finished
         topology.runLocal(0);
+        
         //jedis required for input and ouput of the cluster
         jedis = new Jedis("localhost", Integer.parseInt(ClickTopology.DEFAULT_JEDIS_PORT));
         jedis.connect();
         jedis.flushDB();
+        
         //give it some time to startup before running the tests.
         Utils.sleep(5000);
     }
@@ -68,20 +82,17 @@ public class TopologyIntegrationTest {
         jedis.disconnect();
     }
 
-    Object[] input;
-    Object[] expected;
-    public TopologyIntegrationTest(Object[] input,Object[] expected){
-        this.input = input;
-        this.expected = expected;
-    }
 
     @Test
     public void inputOutputClusterTest(){
-        JSONObject content = new JSONObject();
+        
+    	// Json object to store data as key-value
+    	JSONObject content = new JSONObject();
         content.put("ip" ,input[0]);
         content.put("url" ,input[1]);
         content.put("clientKey" ,input[2]);
 
+        // convert Json object to JsonSrting and persist in DB
         jedis.rpush("count", content.toJSONString());
 
         Utils.sleep(3000);
