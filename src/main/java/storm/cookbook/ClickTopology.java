@@ -19,8 +19,11 @@ import backtype.storm.utils.Utils;
 
 public class ClickTopology {
 
+	// OOB : Builds storm topology
 	private TopologyBuilder builder = new TopologyBuilder();
+	// OOB : Storm topology configuration
 	private Config conf = new Config();
+	// OOB : Local cluster to run storm topology
 	private LocalCluster cluster;
 
 	public static final String DEFAULT_JEDIS_PORT = "6379";
@@ -39,19 +42,21 @@ public class ClickTopology {
 		// Shuffle grouping distributes tuples equally in a
 		// uniform, random way across the tasks
 				.shuffleGrouping("clickSpout");
+		
 		builder.setBolt("geographyBolt",
 				new GeographyBolt(new HttpIPResolver()), 10).shuffleGrouping(
 				"clickSpout");
+		// Note: Each tuple from from spout is sent to both RepeatVisitBolt and GeographyBolt
 
 		// second layer of bolts, commutative in nature, chained to first level
 		// bolts
-		// Global grouping single executor, this grouping does'nt partition
-		// the but sends complete to bolt's task
+		// Global grouping single executor, this grouping does'nt partition tuples
+		// but sends all tuples emitted from RepeatVisitBolt executor of VisitStatsBolt
 		builder.setBolt("totalStats", new VisitStatsBolt(), 1).globalGrouping(
 				"repeatsBolt");
 
 		// Fields grouping partition stream to each task by fields in the
-		// tuples.
+		// tuples. Ensures all tuples of a country are processed by same executor of GeoStatsBolt
 		builder.setBolt("geoStats", new GeoStatsBolt(), 10).fieldsGrouping(
 				"geographyBolt", new Fields(storm.cookbook.Fields.COUNTRY));
 
@@ -75,10 +80,12 @@ public class ClickTopology {
 	}
 
 	public void runLocal(int runTime) {
+		
 		conf.setDebug(true);
 		conf.put(Conf.REDIS_HOST_KEY, "localhost");
 		cluster = new LocalCluster();
 		cluster.submitTopology("test", conf, builder.createTopology());
+		
 		if (runTime > 0) {
 			Utils.sleep(runTime);
 			shutDownLocal();

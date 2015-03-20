@@ -27,13 +27,14 @@ public class ClickSpout extends BaseRichSpout {
 	private Jedis jedis;
 	private String host;
 	private int port;
+	// provides api to emit tuples, tag id to message to ensure each message is processed at-least once 
 	private SpoutOutputCollector collector;
 
 	public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
 
 		// uses default streamId "default"
 		// Bolts can subscribe to multiple streams from spouts and bolts.
-		// emit tuple with fields IP, URL, Client_Key
+		// emit tuple (object) with fields IP, URL, Client_Key
 		outputFieldsDeclarer.declare(new Fields(storm.cookbook.Fields.IP,
 				storm.cookbook.Fields.URL, storm.cookbook.Fields.CLIENT_KEY));
 		
@@ -59,6 +60,7 @@ public class ClickSpout extends BaseRichSpout {
 		jedis = new Jedis(host, port);
 	}
 
+	// Storm calls this method to call spout to emit tuples to output collector
 	public void nextTuple() {
 		
 		// get data from external source

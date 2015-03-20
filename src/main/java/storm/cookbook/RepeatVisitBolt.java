@@ -27,12 +27,13 @@ public class RepeatVisitBolt extends BaseRichBolt {
 	private String host;
 	private int port;
 
-	// 1) A Bolt can be executed by multiple workers. The instance of a bolt 
+	// # A Bolt can be executed by multiple workers. The instance of a bolt 
 	// is created, serialized and submitted to Nimbus.
-	// 2) Nimbus creates worker instance, sends serialized bolt to worker.
+	// # Nimbus creates worker instance, sends serialized bolt to worker.
 	// Worker de-serialize bolt and call prepare method.
 	public void prepare(Map conf, TopologyContext topologyContext,
 			OutputCollector outputCollector) {
+		
 		this.collector = outputCollector;
 		host = conf.get(Conf.REDIS_HOST_KEY).toString();
 		port = Integer.valueOf(conf.get(Conf.REDIS_PORT_KEY).toString());

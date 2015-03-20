@@ -27,6 +27,10 @@ import backtype.storm.tuple.Values;
 public class GeoStatsBolt extends BaseRichBolt {
 
 	private OutputCollector collector;
+	
+	// # Keeps the map of all country and countryStat, list of countries in map
+	// of one instance of bolt will be different from other instance. 
+	// (e.g. 160 countries divided among 10 bolt instances or 10 map objects)
 	private Map<String, CountryStats> stats = new HashMap<String, CountryStats>();
 
 	public void prepare(Map map, TopologyContext topologyContext,
@@ -35,11 +39,14 @@ public class GeoStatsBolt extends BaseRichBolt {
 	}
 
 	public void execute(Tuple tuple) {
+		
 		String country = tuple.getStringByField(storm.cookbook.Fields.COUNTRY);
 		String city = tuple.getStringByField(Fields.CITY);
+		
 		if (!stats.containsKey(country)) {
 			stats.put(country, new CountryStats(country));
 		}
+		
 		stats.get(country).cityFound(city);
 		collector.emit(new Values(country,
 				stats.get(country).getCountryTotal(), city, stats.get(country)
@@ -48,6 +55,7 @@ public class GeoStatsBolt extends BaseRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
+		
 		outputFieldsDeclarer.declare(new backtype.storm.tuple.Fields(
 				storm.cookbook.Fields.COUNTRY,
 				storm.cookbook.Fields.COUNTRY_TOTAL,
