@@ -1,10 +1,5 @@
 package storm.cookbook;
 
-import storm.cookbook.bolt.GeoStatsBolt;
-import storm.cookbook.bolt.GeographyBolt;
-import storm.cookbook.bolt.RepeatVisitBolt;
-import storm.cookbook.bolt.VisitStatsBolt;
-import storm.cookbook.spout.ClickSpout;
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
@@ -13,130 +8,133 @@ import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import backtype.storm.utils.Utils;
+import storm.cookbook.bolt.GeoStatsBolt;
+import storm.cookbook.bolt.GeographyBolt;
+import storm.cookbook.bolt.RepeatVisitBolt;
+import storm.cookbook.bolt.VisitStatsBolt;
+import storm.cookbook.spout.ClickSpout;
 
 /*
  * This class defines the topology and provides the mechanisms to
- *  launch the topology into a cluster or in a local mode
+ * launch the topology into a cluster or in a local mode
  */
 
-// Running topology in local 
-// mvn compile exec:java -Dexec.classpathScope=compile -Dexec.mainClass=storm.cookbook.ClickTopology 
+// Running topology in local
+// mvn compile exec:java -Dexec.classpathScope=compile -Dexec.mainClass=storm.cookbook.ClickTopology
 
 public class ClickTopology {
 
-	// OOB : Builds storm topology
-	private TopologyBuilder builder = new TopologyBuilder();
-	// OOB : Storm topology configuration
-	private Config conf = new Config();
-	// OOB : Local cluster to run storm topology
-	private LocalCluster cluster;
+    // OOB : Builds storm topology
+    private TopologyBuilder    builder            = new TopologyBuilder();
+    // OOB : Storm topology configuration
+    private Config             conf               = new Config();
+    // OOB : Local cluster to run storm topology
+    private LocalCluster       cluster;
 
-	public static final String DEFAULT_JEDIS_PORT = "6379";
+    public static final String DEFAULT_JEDIS_PORT = "6379";
 
-	public ClickTopology() {
-		// spout with 10 threads/executors i.e
-		// 10 instances to divide among 20 workers
-		builder.setSpout("clickSpout", new ClickSpout(), 10);
+    public ClickTopology() {
+        // spout with 10 threads/executors i.e
+        // 10 instances to divide among 20 workers
+        builder.setSpout("clickSpout", new ClickSpout(), 10);
 
-		// By default storm runs 1 tasks per executor
-		// builder.setBolt("info", null, 5).setNumTasks(4);
+        // By default storm runs 1 tasks per executor
+        // builder.setBolt("info", null, 5).setNumTasks(4);
 
-		// First layer of bolts, chained to spout
-		builder.setBolt("repeatsBolt", new RepeatVisitBolt(), 10)
-		// input chained to clickSpout,
-		// Shuffle grouping distributes tuples equally in a
-		// uniform, random way across the tasks
-				.shuffleGrouping("clickSpout");
-		
-		builder.setBolt("geographyBolt",
-				new GeographyBolt(new HttpIPResolver()), 10).shuffleGrouping(
-				"clickSpout");
-		// Note: Each tuple from from spout is sent to both RepeatVisitBolt and GeographyBolt
+        // First layer of bolts, chained to spout
+        builder.setBolt("repeatsBolt", new RepeatVisitBolt(), 10)
+            // input chained to clickSpout,
+            // Shuffle grouping distributes tuples equally in a
+            // uniform, random way across the tasks
+            .shuffleGrouping("clickSpout");
 
-		// second layer of bolts, commutative in nature, chained to first level
-		// bolts
-		// Global grouping single executor, this grouping does'nt partition tuples
-		// but sends all tuples emitted from RepeatVisitBolt executor of VisitStatsBolt
-		builder.setBolt("totalStats", new VisitStatsBolt(), 1).globalGrouping(
-				"repeatsBolt");
+        builder.setBolt("geographyBolt",
+            new GeographyBolt(new HttpIPResolver()), 10).shuffleGrouping(
+                "clickSpout");
+        // Note: Each tuple from from spout is sent to both RepeatVisitBolt and GeographyBolt
 
-		// Fields grouping partition stream to each task by fields in the
-		// tuples. Ensures all tuples of a country are processed by same executor of GeoStatsBolt
-		builder.setBolt("geoStats", new GeoStatsBolt(), 10).fieldsGrouping(
-				"geographyBolt", new Fields(storm.cookbook.Fields.COUNTRY));
+        // second layer of bolts, commutative in nature, chained to first level
+        // bolts
+        // Global grouping single executor, this grouping does'nt partition tuples
+        // but sends all tuples emitted from RepeatVisitBolt executor of VisitStatsBolt
+        builder.setBolt("totalStats", new VisitStatsBolt(), 1).globalGrouping(
+            "repeatsBolt");
 
-		// Info : Fields grouping is also used to join streams eg:
-		// builder.setBolt("joiner", new OrderJoiner()).fieldsGrouping("1", new
-		// Fields("orderId")).fieldsGrouping("2", new Fields("orderRefId"));
+        // Fields grouping partition stream to each task by fields in the
+        // tuples. Ensures all tuples of a country are processed by same executor of GeoStatsBolt
+        builder.setBolt("geoStats", new GeoStatsBolt(), 10).fieldsGrouping(
+            "geographyBolt", new Fields(storm.cookbook.Fields.COUNTRY));
 
-		conf.put(Conf.REDIS_PORT_KEY, DEFAULT_JEDIS_PORT);
-	}
+        // Info : Fields grouping is also used to join streams eg:
+        // builder.setBolt("joiner", new OrderJoiner()).fieldsGrouping("1", new
+        // Fields("orderId")).fieldsGrouping("2", new Fields("orderRefId"));
 
-	public TopologyBuilder getBuilder() {
-		return builder;
-	}
+        conf.put(Conf.REDIS_PORT_KEY, DEFAULT_JEDIS_PORT);
+    }
 
-	public LocalCluster getLocalCluster() {
-		return cluster;
-	}
+    public TopologyBuilder getBuilder() {
+        return builder;
+    }
 
-	public Config getConf() {
-		return conf;
-	}
+    public LocalCluster getLocalCluster() {
+        return cluster;
+    }
 
-	public void runLocal(int runTime) {
-		
-		conf.setDebug(true);
-		conf.put(Conf.REDIS_HOST_KEY, "localhost");
-		cluster = new LocalCluster();
-		cluster.submitTopology("test", conf, builder.createTopology());
-		
-		if (runTime > 0) {
-			Utils.sleep(runTime);
-			shutDownLocal();
-		}
-	}
+    public Config getConf() {
+        return conf;
+    }
 
-	public void shutDownLocal() {
-		if (cluster != null) {
-			cluster.killTopology("test");
-			cluster.shutdown();
-		}
-	}
+    public void runLocal(int runTime) {
 
-	public void runCluster(String name, String redisHost)
-			throws AlreadyAliveException, InvalidTopologyException {
+        conf.setDebug(true);
+        conf.put(Conf.REDIS_HOST_KEY, "localhost");
+        cluster = new LocalCluster();
+        cluster.submitTopology("test", conf, builder.createTopology());
 
-		// 20 workers
-		conf.setNumWorkers(20);
-		conf.put(Conf.REDIS_HOST_KEY, redisHost);
-		StormSubmitter.submitTopology(name, conf, builder.createTopology());
-	}
+        if (runTime > 0) {
+            Utils.sleep(runTime);
+            shutDownLocal();
+        }
+    }
 
-	public static void main(String[] args) throws Exception {
+    public void shutDownLocal() {
+        if (cluster != null) {
+            cluster.killTopology("test");
+            cluster.shutdown();
+        }
+    }
 
-		ClickTopology topology = new ClickTopology();
+    public void runCluster(String name, String redisHost)
+        throws AlreadyAliveException, InvalidTopologyException {
 
-		if (args != null && args.length > 1) {
-			topology.runCluster(args[0], args[1]);
-		} else {
-			if (args != null && args.length == 1)
-				System.out
-						.println("Running in local mode, redis ip missing for cluster run");
-			topology.runLocal(10000);
-		}
+        // 20 workers
+        conf.setNumWorkers(20);
+        conf.put(Conf.REDIS_HOST_KEY, redisHost);
+        StormSubmitter.submitTopology(name, conf, builder.createTopology());
+    }
 
-	}
+    public static void main(String[] args) throws Exception {
+
+        ClickTopology topology = new ClickTopology();
+
+        if (args != null && args.length > 1) {
+            topology.runCluster(args[0], args[1]);
+        } else {
+            if (args != null && args.length == 1)
+                System.out
+                    .println("Running in local mode, redis ip missing for cluster run");
+            topology.runLocal(10000);
+        }
+
+    }
 
 }
 
 /*
  * 1) A topology is an abstraction that defines the graph of the computation.
- * 
  * 2) A stream is an unbounded sequence of tuples that can be processed in
  * parallel by Storm. Each stream can be processed by a single or multiple types
  * of bolts
- * 
  * 3) Each stream in a Storm application is given an ID and the bolts can
  * produce and consume tuples from these streams on the basis of their ID.
  */
